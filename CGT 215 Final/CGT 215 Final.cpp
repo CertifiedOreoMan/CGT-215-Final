@@ -34,7 +34,7 @@ int main()
     stickman.setTexture(stickman1);
     Vector2f sz = stickman.getSize();
     stickman.setCenter(Vector2f(400,
-        600 - (sz.y / 2)));
+        595 - (sz.y / 2)));
     bool running = true;
     bool jumping = false;
 
@@ -43,13 +43,14 @@ int main()
     top.setSize(Vector2f(800, 10));
     top.setCenter(Vector2f(400, 5));
     top.setStatic(true);
-    world.AddPhysicsBody(top);
+    world.AddPhysicsBody(top);*/
 
-    PhysicsRectangle right;
-    right.setSize(Vector2f(10, 600));
-    right.setCenter(Vector2f(795, 300));
-    right.setStatic(true);
-    world.AddPhysicsBody(right);*/
+    PhysicsRectangle floor;
+    floor.setSize(Vector2f(800, 10));
+    floor.setCenter(Vector2f(400, 595));
+    floor.setStatic(true);
+    floor.setFillColor(sf::Color{100, 100, 100, 255});
+    world.AddPhysicsBody(floor);
 
     Texture blockTex;
     LoadTex(blockTex, "images/block.png");
@@ -76,7 +77,7 @@ int main()
     Time lastTime(clock.getElapsedTime());
     Time currentTime(lastTime);
     long interval = 0;
-
+    bool anim = true;
     while (running) {
         currentTime = clock.getElapsedTime();
         Time deltaTime = currentTime - lastTime;
@@ -96,16 +97,16 @@ int main()
             for (PhysicsShape& block : blocks) {
                 window.draw((PhysicsSprite&)block);
             }
-
+            
             if (interval >= 42000000) {
                 cout << "count" << endl;
-                bool anim = true;
+                
 
                 if (anim == true) {
                     stickman.setTexture(stickman2);
                     anim = false;
                 }
-                else if (anim == false) {
+                else{
                     stickman.setTexture(stickman1);
                     anim = true;
                 }
@@ -129,6 +130,7 @@ int main()
             }
 
             window.draw(stickman);
+            window.draw(floor);
             scoreText.setString(to_string(score));
             FloatRect textBounds = scoreText.getGlobalBounds();
             scoreText.setPosition(
