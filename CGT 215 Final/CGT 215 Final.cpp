@@ -25,18 +25,19 @@ int main()
 {
     RenderWindow window(VideoMode(800, 600), "Stickman Sprint");
     World world(Vector2f(0, 0));
+    World world2(Vector2f(0, 1));
     int score(0);
 
     PhysicsSprite& stickman = *new PhysicsSprite();
-    Texture stickman1, stickman2;
-    LoadTex(stickman1, "images/stickman1.png");
-    LoadTex(stickman2, "images/stickman2.png");
-    stickman.setTexture(stickman1);
+    Texture stickmanTex1, stickmanTex2;
+    LoadTex(stickmanTex1, "images/stickman1.png");
+    LoadTex(stickmanTex2, "images/stickman2.png");
+    stickman.setTexture(stickmanTex1);
     Vector2f sz = stickman.getSize();
-    stickman.setCenter(Vector2f(400,
-        595 - (sz.y / 2)));
+    stickman.setCenter(Vector2f(400, 400));
     bool running = true;
     bool jumping = false;
+    world2.AddPhysicsBody(stickman);
 
 
     /*PhysicsRectangle top;
@@ -50,7 +51,7 @@ int main()
     floor.setCenter(Vector2f(400, 595));
     floor.setStatic(true);
     floor.setFillColor(sf::Color{100, 100, 100, 255});
-    world.AddPhysicsBody(floor);
+    world2.AddPhysicsBody(floor);
 
     Texture blockTex;
     LoadTex(blockTex, "images/block.png");
@@ -87,6 +88,7 @@ int main()
         if (deltaMS > 9) {
             lastTime = currentTime;
             world.UpdatePhysics(deltaMS);
+            world2.UpdatePhysics(deltaMS);
             //MoveCrossbow(crossBow, deltaMS);
             if (Keyboard::isKeyPressed(Keyboard::Space) &&
                 !jumping) {
@@ -103,11 +105,11 @@ int main()
                 
 
                 if (anim == true) {
-                    stickman.setTexture(stickman2);
+                    stickman.setTexture(stickmanTex2);
                     anim = false;
                 }
                 else{
-                    stickman.setTexture(stickman1);
+                    stickman.setTexture(stickmanTex1);
                     anim = true;
                 }
 
