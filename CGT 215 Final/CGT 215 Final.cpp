@@ -6,7 +6,8 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <SFPhysics.h>
-#include <vector>
+#include <vector>\
+
 
 using namespace std;
 using namespace sf;
@@ -29,14 +30,17 @@ int main()
     int score(0);
 
     PhysicsSprite& stickman = *new PhysicsSprite();
-    Texture stickmanTex1, stickmanTex2;
+    Texture stickmanTex1, stickmanTex2, stickmanTex3;
     LoadTex(stickmanTex1, "images/stickman1.png");
     LoadTex(stickmanTex2, "images/stickman2.png");
+    LoadTex(stickmanTex3, "images/stickman3.png");
     stickman.setTexture(stickmanTex1);
     Vector2f sz = stickman.getSize();
     stickman.setCenter(Vector2f(400, 400));
     bool running = true;
     bool jumping = false;
+    bool sliding = false;
+    bool hasDoubleJump = true;
     world2.AddPhysicsBody(stickman);
 
 
@@ -52,6 +56,7 @@ int main()
     floor.setStatic(true);
     floor.setFillColor(sf::Color{100, 100, 100, 255});
     world2.AddPhysicsBody(floor);
+    
 
     Texture blockTex;
     LoadTex(blockTex, "images/block.png");
@@ -79,20 +84,36 @@ int main()
     Time currentTime(lastTime);
     long interval = 0;
     bool anim = true;
+    int max = 100;
+    int randInt;
+
     while (running) {
         currentTime = clock.getElapsedTime();
         Time deltaTime = currentTime - lastTime;
         int deltaMS = deltaTime.asMilliseconds();
         interval += deltaMS;
-
+        
         if (deltaMS > 9) {
             lastTime = currentTime;
             world.UpdatePhysics(deltaMS);
             world2.UpdatePhysics(deltaMS);
             //MoveCrossbow(crossBow, deltaMS);
-            if (Keyboard::isKeyPressed(Keyboard::Space) &&
-                !jumping) {
-                jumping = true;
+            if (Keyboard::isKeyPressed(Keyboard::W) || Keyboard::isKeyPressed(Keyboard::Up)) {
+                if (jumping == false) {                                 //not currently jumping
+                    jumping = true;
+                    stickman.applyImpulse(Vector2f(0, -0.50));
+                }
+                else if (jumping == true && hasDoubleJump == true && stickman.getVelocity().y >= -0.2) {    //currently jumping, double jump available
+                    hasDoubleJump = false;
+                    stickman.setVelocity(Vector2f(0, 0));
+                    stickman.applyImpulse(Vector2f(0, -0.50));
+                }
+            }
+            if (Keyboard::isKeyPressed(Keyboard::S) || Keyboard::isKeyPressed(Keyboard::Down)) {
+                sliding = true;
+            }
+            else if (!Keyboard::isKeyPressed(Keyboard::S) && !Keyboard::isKeyPressed(Keyboard::Down)) {
+                sliding = false;
             }
 
             window.clear();
@@ -102,23 +123,42 @@ int main()
             
             if (interval >= 42000000) {
                 cout << "count" << endl;
-                
+                cout << jumping << endl;
+                cout << hasDoubleJump << endl;
 
-                if (anim == true) {
-                    stickman.setTexture(stickmanTex2);
-                    anim = false;
+                if (sliding == true) {
+                    stickman.setTexture(stickmanTex3);
                 }
-                else{
-                    stickman.setTexture(stickmanTex1);
-                    anim = true;
+                else {
+                    if (anim == true) {
+                        stickman.setTexture(stickmanTex2);
+                        anim = false;
+                    }
+                    else if (anim == false) {
+                        stickman.setTexture(stickmanTex1);
+                        anim = true;
+                    }
                 }
+                
 
                 PhysicsSprite& block = blocks.Create();
                 block.setTexture(blockTex);
                 Vector2f sz = block.getSize();
-                block.setCenter(Vector2f(0, 20 + (sz.y / 2)));
-                block.setVelocity(Vector2f(0.25, 0));
-                world.AddPhysicsBody(block);
+                randInt = rand() % max;
+                if (randInt < 33) {
+                    block.setCenter(Vector2f(0, 490 + (sz.y / 2)));  //upper
+                    block.setVelocity(Vector2f(0.25, 0));
+                    world.AddPhysicsBody(block);
+                }
+                else if (randInt >= 33 && randInt < 66) {
+                    block.setCenter(Vector2f(0, 550 + (sz.y / 2)));  //lower
+                    block.setVelocity(Vector2f(0.25, 0));
+                    world.AddPhysicsBody(block);
+                }
+                else {
+                    blocks.QueueRemove(block);
+                }
+                
 
                 block.onCollision =
                     [&running, &world, &block, &blocks, &score, &stickman]
@@ -128,7 +168,18 @@ int main()
                     }
 
                 };
+                stickman.onCollision =
+                    [&jumping, &stickman, &floor, &hasDoubleJump]
+                (PhysicsBodyCollisionResult result) {
+                    if (result.object2 == floor) {
+                        stickman.setCenter(Vector2f(400, 530));
+                        stickman.setVelocity(Vector2f(0, 0));
+                        jumping = false;
+                        hasDoubleJump = true;
+                    }
+                };
                 interval = 0;
+                
             }
 
             window.draw(stickman);
@@ -136,7 +187,7 @@ int main()
             scoreText.setString(to_string(score));
             FloatRect textBounds = scoreText.getGlobalBounds();
             scoreText.setPosition(
-                Vector2f(790 - textBounds.width, 590 - textBounds.height));
+                Vector2f(790 - textBounds.width, 10 + textBounds.height));
             window.draw(scoreText);
             //arrowCountText.setString(to_string(arrows));
             textBounds = arrowCountText.getGlobalBounds();
