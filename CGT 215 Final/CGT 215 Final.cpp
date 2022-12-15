@@ -30,19 +30,55 @@ int main()
     int score(0);
 
     PhysicsSprite& stickman = *new PhysicsSprite();
-    Texture stickmanTex1, stickmanTex2, stickmanTex3;
-    LoadTex(stickmanTex1, "images/stickman1.png");
-    LoadTex(stickmanTex2, "images/stickman2.png");
-    LoadTex(stickmanTex3, "images/stickman3.png");
+    PhysicsSprite& stickmanSliding = *new PhysicsSprite();
+
+    Texture stickmanTex1, stickmanTex2, stickmanTex3, stickmanTex4;
+    LoadTex(stickmanTex1, "images/stickman1-2.png");    //running frame 1
+    LoadTex(stickmanTex2, "images/stickman2-2.png");    //running frame 2
+    LoadTex(stickmanTex3, "images/stickman3-2.png");    //sliding (vertical)
+    LoadTex(stickmanTex4, "images/stickman4-2.png");    //sliding (horizontal)
+
     stickman.setTexture(stickmanTex1);
-    Vector2f sz = stickman.getSize();
-    stickman.setCenter(Vector2f(400, 400));
+    //stickman.setCenter(Vector2f(400, 500));
+    //world.AddPhysicsBody(stickman);
+    
+    
+    stickmanSliding.setTexture(stickmanTex4);
+    
+    
+    PhysicsRectangle hitboxCenter, hitbox1, hitbox2, hitbox3;
+    hitboxCenter.setSize(Vector2f(60, 60));
+    hitbox1.setSize(Vector2f(60, 60));
+    hitbox2.setSize(Vector2f(60, 40));
+    hitbox3.setSize(Vector2f(60, 60));
+    hitboxCenter.setCenter(Vector2f(400, 520));
+
+    world2.AddPhysicsBody(hitboxCenter);
+    world.AddPhysicsBody(hitbox1); 
+    //world.AddPhysicsBody(hitbox2);  
+    //world.AddPhysicsBody(hitbox3);  
+    hitbox1.setStatic(true);
+    hitbox2.setStatic(true);
+    hitbox3.setStatic(true);
+
     bool running = true;
     bool jumping = false;
     bool sliding = false;
     bool hasDoubleJump = true;
-    world2.AddPhysicsBody(stickman);
 
+
+
+    PhysicsCircle center;
+    center.setSize(Vector2f(10, 10));
+    center.setCenter(Vector2f(400, 500));
+    center.setStatic(true);
+    center.setFillColor(sf::Color{ 255, 0, 0, 255 });
+    
+    PhysicsCircle corner;
+    corner.setSize(Vector2f(10, 10));
+    corner.setCenter(Vector2f(400, 500));
+    corner.setStatic(true);
+    corner.setFillColor(sf::Color{ 0, 255, 0, 255 });
 
     /*PhysicsRectangle top;
     top.setSize(Vector2f(800, 10));
@@ -83,53 +119,95 @@ int main()
     Time lastTime(clock.getElapsedTime());
     Time currentTime(lastTime);
     long interval = 0;
+    //long elapsed = 0;
     bool anim = true;
     int max = 100;
     int randInt;
-
+    int consecutiveBlocks = 0; //counts number of consecutive blocks spawned; should not exceed 2 consecutive blocks
+    bool lastState = false;
+    world.AddPhysicsBody(hitbox2);
+    Vector2f centerStandingPoint, centerSlidingPoint;
+    
+    
     while (running) {
+                      
         currentTime = clock.getElapsedTime();
         Time deltaTime = currentTime - lastTime;
         int deltaMS = deltaTime.asMilliseconds();
         interval += deltaMS;
         
         if (deltaMS > 9) {
+            window.clear();
+            cout << "1" << endl;
+            hitbox1.setCenter(hitboxCenter.getCenter());
+            hitbox2.setCenter(Vector2f(hitboxCenter.getCenter().x, hitboxCenter.getCenter().y - 70));
+            hitbox3.setCenter(Vector2f(hitboxCenter.getCenter().x - 60, hitboxCenter.getCenter().y));
+
+            centerStandingPoint = Vector2f(hitbox1.getCenter().x, hitbox1.getCenter().y - 40);
+            centerSlidingPoint = Vector2f(hitbox1.getCenter().x - 30, hitbox1.getCenter().y);
+
+            stickmanSliding.setCenter(centerSlidingPoint);
+            
+
             lastTime = currentTime;
             world.UpdatePhysics(deltaMS);
             world2.UpdatePhysics(deltaMS);
             //MoveCrossbow(crossBow, deltaMS);
+
+            center.setCenter(stickman.getCenter());
+            corner.setCenter(stickman.getCenter()-stickman.getOrigin());
+            cout << "2" << endl;
+                                                                                                                
             if (Keyboard::isKeyPressed(Keyboard::W) || Keyboard::isKeyPressed(Keyboard::Up)) {
-                if (jumping == false) {                                 //not currently jumping
+                if (jumping == false) {                                 
                     jumping = true;
-                    stickman.applyImpulse(Vector2f(0, -0.50));
+                    hitboxCenter.applyImpulse(Vector2f(0, -0.50));
                 }
-                else if (jumping == true && hasDoubleJump == true && stickman.getVelocity().y >= -0.2) {    //currently jumping, double jump available
+                else if (jumping == true && hasDoubleJump == true && hitboxCenter.getVelocity().y >= -0.2) {   
                     hasDoubleJump = false;
-                    stickman.setVelocity(Vector2f(0, 0));
-                    stickman.applyImpulse(Vector2f(0, -0.50));
+                    hitboxCenter.setVelocity(Vector2f(0, 0));
+                    hitboxCenter.applyImpulse(Vector2f(0, -0.50));
                 }
             }
+            cout << "3" << endl;
+            
             if (Keyboard::isKeyPressed(Keyboard::S) || Keyboard::isKeyPressed(Keyboard::Down)) {
                 sliding = true;
+                //stickman.setRotation(-90);
+                //stickman.setTexture(stickmanTex3);
+                stickmanSliding.setCenter(centerSlidingPoint);
+                //hitbox2.setCenter(Vector2f(hitbox1.getCenter().x - 60, hitbox1.getCenter().y));
+                if (lastState == false) {
+                    world.RemovePhysicsBody(hitbox2);
+                    world.AddPhysicsBody(hitbox3);
+                }
+                window.draw(stickmanSliding);
+                lastState = true;
             }
             else if (!Keyboard::isKeyPressed(Keyboard::S) && !Keyboard::isKeyPressed(Keyboard::Down)) {
                 sliding = false;
+                stickman.setRotation(0);
+                stickman.setCenter(centerStandingPoint);
+                if (lastState == true) {
+                    world.RemovePhysicsBody(hitbox3);
+                    world.AddPhysicsBody(hitbox2);
+                }
+                window.draw(stickman);
+                lastState = false;
             }
-
-            window.clear();
+            cout << "4" << endl;
+            
             for (PhysicsShape& block : blocks) {
                 window.draw((PhysicsSprite&)block);
             }
-            
-            if (interval >= 42000000) {
+            window.draw(center);
+            cout << "5" << endl;
+            if (interval >= 32000000) {
                 cout << "count" << endl;
-                cout << jumping << endl;
-                cout << hasDoubleJump << endl;
+                //cout << jumping << endl;
+                //cout << hasDoubleJump << endl;
 
-                if (sliding == true) {
-                    stickman.setTexture(stickmanTex3);
-                }
-                else {
+                if (sliding == false) {
                     if (anim == true) {
                         stickman.setTexture(stickmanTex2);
                         anim = false;
@@ -140,50 +218,76 @@ int main()
                     }
                 }
                 
-
+                
                 PhysicsSprite& block = blocks.Create();
                 block.setTexture(blockTex);
                 Vector2f sz = block.getSize();
                 randInt = rand() % max;
                 if (randInt < 33) {
-                    block.setCenter(Vector2f(0, 490 + (sz.y / 2)));  //upper
-                    block.setVelocity(Vector2f(0.25, 0));
-                    world.AddPhysicsBody(block);
+                    if (consecutiveBlocks < 2) {
+                        block.setCenter(Vector2f(0, 500 + (sz.y / 2)));  //upper
+                        block.setVelocity(Vector2f(0.25, 0));
+                        world.AddPhysicsBody(block);
+                        consecutiveBlocks++;
+                    }
+                    else {
+                        blocks.QueueRemove(block);
+                        consecutiveBlocks = 0;
+                    }
+                    
                 }
                 else if (randInt >= 33 && randInt < 66) {
+                    if (consecutiveBlocks < 2) {
                     block.setCenter(Vector2f(0, 550 + (sz.y / 2)));  //lower
                     block.setVelocity(Vector2f(0.25, 0));
                     world.AddPhysicsBody(block);
+                    consecutiveBlocks++;
+                    }
+                    else {
+                        blocks.QueueRemove(block);
+                        consecutiveBlocks = 0;
+                    }
                 }
                 else {
+                    
                     blocks.QueueRemove(block);
+                    consecutiveBlocks = 0;
                 }
                 
 
                 block.onCollision =
-                    [&running, &world, &block, &blocks, &score, &stickman]
+                    [&running, &world, &block, &blocks, &score, &stickman, &stickmanSliding, &hitbox1, &hitbox2, &hitbox3]
                 (PhysicsBodyCollisionResult result) {
-                    if (result.object2 == stickman) {
+                    if (result.object2 == stickman || result.object2 == stickmanSliding) {
                         running = false;
                     }
 
                 };
-                stickman.onCollision =
-                    [&jumping, &stickman, &floor, &hasDoubleJump]
+                hitboxCenter.onCollision =
+                    [&jumping, &stickman, &floor, &hasDoubleJump, &hitboxCenter]
                 (PhysicsBodyCollisionResult result) {
                     if (result.object2 == floor) {
-                        stickman.setCenter(Vector2f(400, 530));
-                        stickman.setVelocity(Vector2f(0, 0));
+                        hitboxCenter.setCenter(Vector2f(400, 560));
+                        hitboxCenter.setVelocity(Vector2f(0, 0));
                         jumping = false;
                         hasDoubleJump = true;
                     }
                 };
+                //elapsed += interval;
                 interval = 0;
                 
             }
 
-            window.draw(stickman);
+            
             window.draw(floor);
+            //window.draw(stickman);
+            //window.draw(corner);
+            //stickman.visualizeBounds(window);
+            /*hitbox1.visualizeBounds(window);
+            hitbox2.visualizeBounds(window);
+            hitbox3.visualizeBounds(window);*/
+            world.VisualizeAllBounds(window);
+            world2.VisualizeAllBounds(window);
             scoreText.setString(to_string(score));
             FloatRect textBounds = scoreText.getGlobalBounds();
             scoreText.setPosition(
